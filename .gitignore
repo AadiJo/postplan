@@ -2,6 +2,7 @@ node_modules/
 .next/
 out/
 dist/
+packages/postplan-cli/bin/
 .env
 .env.*
 !.env.example

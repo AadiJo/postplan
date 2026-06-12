@@ -12,7 +12,7 @@
     "lint": "next lint",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
-    "postplan": "node packages/postplan-cli/bin/postplan.js",
+    "postplan": "npm run build --workspace postplan --silent && node packages/postplan-cli/bin/postplan.js",
     "sync:installed": "node scripts/sync-installed.mjs",
     "hooks:install": "git config core.hooksPath .githooks"
   },

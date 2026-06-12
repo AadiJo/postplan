@@ -55,6 +55,7 @@ jobs:
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
       POSTPLAN_PUBLISH_TOKEN: ${{ secrets.POSTPLAN_PUBLISH_TOKEN }}
+      GH_REPO_ADMIN_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -75,7 +76,7 @@ jobs:
         shell: bash
         run: |
           missing=0
-          for name in CONVEX_DEPLOY_KEY NEXT_PUBLIC_CONVEX_URL POSTPLAN_PUBLISH_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TOKEN; do
+          for name in CONVEX_DEPLOY_KEY NEXT_PUBLIC_CONVEX_URL POSTPLAN_PUBLISH_TOKEN GH_REPO_ADMIN_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TOKEN; do
             if [ -z "${!name}" ]; then
               echo "::error::$name is not set"
               missing=1
@@ -108,3 +109,8 @@ jobs:
 
       - name: Deploy Vercel
         run: npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+
+      - name: Clear GitHub repository website
+        env:
+          GH_TOKEN: ${{ secrets.GH_REPO_ADMIN_TOKEN }}
+        run: gh api --method PATCH "repos/${GITHUB_REPOSITORY}" --field homepage=''
