@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111212;
+      --text: #f2f2f0;
+      --muted: #9a9c9b;
+      --quiet: #686b6a;
+      --line: #2a2c2c;
+      --code: #181919;
+      --accent: #d7dad8;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+    main {
+      width: min(860px, calc(100% - 44px));
+      margin: 0 auto;
+      padding: 96px 0 104px;
+    }
+    header { margin-bottom: 58px; }
+    .brand {
+      margin: 0 0 28px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(48px, 8vw, 86px);
+      font-weight: 760;
+      letter-spacing: -0.075em;
+      line-height: 0.94;
+    }
+    .intro {
+      max-width: 690px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+    .meta {
+      margin: 18px 0 0;
+      color: var(--quiet);
+      font-size: 14px;
+    }
+    section {
+      padding: 34px 0;
+      border-top: 1px solid var(--line);
+    }
+    h2 {
+      margin: 0 0 16px;
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 720;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+    }
+    p {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+    }
+    p + p { margin-top: 12px; }
+    ul, ol {
+      max-width: 760px;
+      margin: 14px 0 0;
+      padding-left: 22px;
+      color: var(--muted);
+    }
+    li + li { margin-top: 8px; }
+    a { color: var(--text); }
+    strong { color: var(--text); font-weight: 700; }
+    code {
+      border-radius: 5px;
+      background: var(--code);
+      color: #eeeeec;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+      padding: 0.08em 0.32em;
+    }
+    pre {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 16px 0 0;
+      padding: 0;
+      color: #c9ccca;
+      background: transparent;
+      font: 14px/1.7 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      white-space: pre;
+    }
+    table {
+      width: 100%;
+      margin: 18px 0 0;
+      border-collapse: collapse;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    th, td {
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--text); font-weight: 700; }
+    th + th, td + td { padding-left: 28px; }
+    @media (max-width: 680px) {
+      main { width: min(100% - 30px, 860px); padding: 64px 0 72px; }
+      h1 { font-size: 48px; }
+      table, tbody, tr, th, td { display: block; }
+      th + th, td + td { padding-left: 0; }
+      td { border-top: 0; padding-top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="brand">// postplan</p>
+      <h1>{{title}}</h1>
+      <p class="intro">{{summary}}</p>
+      <p class="meta">{{date}} / draft / local .plans html</p>
+    </header>
+
+    <section>
+      <h2>Plan links</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>Local</th>
+            <td data-postplan-local><code>{{localPath}}</code></td>
+          </tr>
+          <tr>
+            <th>Hosted</th>
+            <td data-postplan-hosted>pending publish</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Context</h2>
+      <p>Explain the current state and why this plan exists.</p>
+    </section>
+
+    <section>
+      <h2>Recommendation</h2>
+      <p>State the proposed direction and the tradeoff it makes.</p>
+    </section>
+
+    <section>
+      <h2>Implementation</h2>
+      <ul>
+        <li>Replace this with a concrete task.</li>
+        <li>Add tables, diagrams, code snippets, or controls when they clarify the plan.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <p>Describe the checks that prove the work is complete.</p>
+    </section>
+  </main>
+</body>
+</html>

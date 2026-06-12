@@ -1,0 +1,12 @@
+{
+  "name": "postplan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "postplan": "./bin/postplan.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
