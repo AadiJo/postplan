@@ -1,59 +1,72 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { homedir } from "node:os";
-
 const VERSION = "0.1.0";
 const PLAN_RE = /^(\d{4}-\d{2}-\d{2})_([a-z0-9_]+)\.html$/;
-
+const CONFIG_KEYS = ["project", "endpoint", "token"];
 function cwdPath(...parts) {
-  return join(process.cwd(), ...parts);
+    return join(process.cwd(), ...parts);
 }
-
 function userConfigPath() {
-  return join(homedir(), ".postplan", "config.json");
+    return join(homedir(), ".postplan", "config.json");
 }
-
+function isRecord(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function toConfig(value) {
+    if (!isRecord(value))
+        return {};
+    const config = {};
+    for (const key of CONFIG_KEYS) {
+        const field = value[key];
+        if (typeof field === "string") {
+            config[key] = field;
+        }
+    }
+    return config;
+}
 function readJsonIfExists(path) {
-  if (!existsSync(path)) return {};
-  return JSON.parse(readFileSync(path, "utf8"));
+    if (!existsSync(path))
+        return {};
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    return toConfig(parsed);
 }
-
 function writeJson(path, value) {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
-
 function slugify(value) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/_+/g, "_");
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .replace(/_+/g, "_");
 }
-
 function today() {
-  return new Date().toISOString().slice(0, 10);
+    return new Date().toISOString().slice(0, 10);
 }
-
 function parsePlanFilename(path) {
-  const filename = path.split(/[\\/]/).pop() ?? "";
-  const match = filename.match(PLAN_RE);
-  if (!match) {
-    throw new Error(`Expected filename like yyyy-mm-dd_snake_case_name.html, got ${filename}`);
-  }
-  return {
-    date: match[1],
-    localName: match[2],
-    sourceFilename: filename,
-  };
+    const filename = path.split(/[\\/]/).pop() ?? "";
+    const match = filename.match(PLAN_RE);
+    if (!match) {
+        throw new Error(`Expected filename like yyyy-mm-dd_snake_case_name.html, got ${filename}`);
+    }
+    const [, date, localName] = match;
+    if (!date || !localName) {
+        throw new Error(`Expected filename like yyyy-mm-dd_snake_case_name.html, got ${filename}`);
+    }
+    return {
+        date,
+        localName,
+        sourceFilename: filename,
+    };
 }
-
 function planTemplate({ title, localName, date, localPath }) {
-  return `<!doctype html>
+    return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -233,19 +246,17 @@ function planTemplate({ title, localName, date, localPath }) {
 </html>
 `;
 }
-
 function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
 }
-
 function injectHostedLink(html, { hostedUrl, localPath }) {
-  const hostedCell = `<td data-postplan-hosted><a href="${escapeHtml(hostedUrl)}">${escapeHtml(hostedUrl)}</a></td>`;
-  const localCell = `<td data-postplan-local><code>${escapeHtml(localPath)}</code></td>`;
-  const linksSection = `
+    const hostedCell = `<td data-postplan-hosted><a href="${escapeHtml(hostedUrl)}">${escapeHtml(hostedUrl)}</a></td>`;
+    const localCell = `<td data-postplan-local><code>${escapeHtml(localPath)}</code></td>`;
+    const linksSection = `
 
     <section>
       <h2>Plan links</h2>
@@ -262,170 +273,177 @@ function injectHostedLink(html, { hostedUrl, localPath }) {
         </tbody>
       </table>
     </section>`;
-  let next = html;
-
-  if (!/data-postplan-hosted/.test(next) && /<\/header>/.test(next)) {
-    next = next.replace(/<\/header>/, `</header>${linksSection}`);
-    return next;
-  }
-
-  if (/<td data-postplan-local>[\s\S]*?<\/td>/.test(next)) {
-    next = next.replace(/<td data-postplan-local>[\s\S]*?<\/td>/, localCell);
-  }
-
-  if (/<td data-postplan-hosted>[\s\S]*?<\/td>/.test(next)) {
-    next = next.replace(/<td data-postplan-hosted>[\s\S]*?<\/td>/, hostedCell);
-  }
-
-  return next;
-}
-
-function init() {
-  mkdirSync(cwdPath(".plans"), { recursive: true });
-  const configPath = cwdPath(".postplan.json");
-  if (!existsSync(configPath)) {
-    writeJson(configPath, {
-      project: slugify(process.cwd().split(/[\\/]/).pop() ?? "project"),
-      endpoint: "http://localhost:3000",
-    });
-  }
-  console.log("initialized .plans/ and .postplan.json");
-}
-
-function createPlan(args) {
-  const title = args.join(" ").trim();
-  if (!title) throw new Error('Usage: postplan new "plan name"');
-  const localName = slugify(title);
-  const date = today();
-  mkdirSync(cwdPath(".plans"), { recursive: true });
-  const filename = `${date}_${localName}.html`;
-  const localPath = `.plans/${filename}`;
-  const path = cwdPath(".plans", filename);
-  if (existsSync(path)) throw new Error(`Plan already exists: ${path}`);
-  writeFileSync(path, planTemplate({ title, localName, date, localPath }));
-  console.log(path);
-}
-
-function listPlans() {
-  const plansDir = cwdPath(".plans");
-  if (!existsSync(plansDir)) {
-    console.log("No .plans/ directory found.");
-    return;
-  }
-
-  const plans = readdirSync(plansDir)
-    .filter((file) => PLAN_RE.test(file))
-    .sort()
-    .reverse();
-
-  for (const plan of plans) {
-    const parsed = parsePlanFilename(plan);
-    console.log(`${parsed.date}  ${parsed.localName}  .plans/${parsed.sourceFilename}`);
-  }
-}
-
-function readConfig() {
-  return {
-    project: undefined,
-    endpoint: undefined,
-    token: undefined,
-    ...readJsonIfExists(userConfigPath()),
-    ...readJsonIfExists(cwdPath(".postplan.json")),
-  };
-}
-
-function setConfig([key, ...valueParts]) {
-  const value = valueParts.join(" ").trim();
-  if (!key || !value) throw new Error("Usage: postplan config set <project|endpoint|token> <value>");
-
-  if (key === "token") {
-    const config = readJsonIfExists(userConfigPath());
-    config.token = value;
-    writeJson(userConfigPath(), config);
-    console.log(`saved token to ${userConfigPath()}`);
-    return;
-  }
-
-  if (!["project", "endpoint"].includes(key)) {
-    throw new Error("Config key must be project, endpoint, or token");
-  }
-
-  const configPath = cwdPath(".postplan.json");
-  const config = readJsonIfExists(configPath);
-  config[key] = value;
-  writeJson(configPath, config);
-  console.log(`saved ${key} to ${configPath}`);
-}
-
-function getOption(args, name) {
-  const index = args.indexOf(name);
-  if (index === -1) return undefined;
-  const value = args[index + 1];
-  if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
-  args.splice(index, 2);
-  return value;
-}
-
-async function publish(args) {
-  const projectFlag = getOption(args, "--project");
-  const endpointFlag = getOption(args, "--endpoint");
-  const tokenFlag = getOption(args, "--token");
-  const [fileArg] = args;
-  if (!fileArg) throw new Error("Usage: postplan publish <file> [--project slug] [--endpoint url]");
-
-  const filePath = resolve(fileArg);
-  if (!existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
-  const parsed = parsePlanFilename(filePath);
-  let html = readFileSync(filePath, "utf8");
-  const config = readConfig();
-  const projectSlug = projectFlag ?? config.project;
-  const endpoint = endpointFlag ?? config.endpoint;
-  const token = tokenFlag ?? process.env.POSTPLAN_TOKEN ?? config.token;
-
-  if (!projectSlug) throw new Error("No project slug configured. Run postplan config set project <slug>.");
-  if (!endpoint) throw new Error("No endpoint configured. Run postplan config set endpoint <url>.");
-
-  async function sendPublish(currentHtml) {
-    const contentHash = `sha256:${createHash("sha256").update(currentHtml).digest("hex")}`;
-    const response = await fetch(`${endpoint.replace(/\/$/, "")}/api/publish`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        projectSlug,
-        ...parsed,
-        title: parsed.localName.replaceAll("_", " "),
-        html: currentHtml,
-        contentHash,
-      }),
-    });
-
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(body.error ?? `Publish failed with HTTP ${response.status}`);
+    let next = html;
+    if (!/data-postplan-hosted/.test(next) && /<\/header>/.test(next)) {
+        next = next.replace(/<\/header>/, `</header>${linksSection}`);
+        return next;
     }
-    return body;
-  }
-
-  let body = await sendPublish(html);
-  const linkedHtml = injectHostedLink(html, {
-    hostedUrl: body.url,
-    localPath: `.plans/${parsed.sourceFilename}`,
-  });
-
-  if (linkedHtml !== html) {
-    writeFileSync(filePath, linkedHtml);
-    html = linkedHtml;
-    body = await sendPublish(html);
-  }
-
-  console.log(body.url);
+    if (/<td data-postplan-local>[\s\S]*?<\/td>/.test(next)) {
+        next = next.replace(/<td data-postplan-local>[\s\S]*?<\/td>/, localCell);
+    }
+    if (/<td data-postplan-hosted>[\s\S]*?<\/td>/.test(next)) {
+        next = next.replace(/<td data-postplan-hosted>[\s\S]*?<\/td>/, hostedCell);
+    }
+    return next;
 }
-
+function init() {
+    mkdirSync(cwdPath(".plans"), { recursive: true });
+    const configPath = cwdPath(".postplan.json");
+    if (!existsSync(configPath)) {
+        writeJson(configPath, {
+            project: slugify(process.cwd().split(/[\\/]/).pop() ?? "project"),
+            endpoint: "http://localhost:3000",
+        });
+    }
+    console.log("initialized .plans/ and .postplan.json");
+}
+function createPlan(args) {
+    const title = args.join(" ").trim();
+    if (!title)
+        throw new Error('Usage: postplan new "plan name"');
+    const localName = slugify(title);
+    const date = today();
+    mkdirSync(cwdPath(".plans"), { recursive: true });
+    const filename = `${date}_${localName}.html`;
+    const localPath = `.plans/${filename}`;
+    const path = cwdPath(".plans", filename);
+    if (existsSync(path))
+        throw new Error(`Plan already exists: ${path}`);
+    writeFileSync(path, planTemplate({ title, localName, date, localPath }));
+    console.log(path);
+}
+function listPlans() {
+    const plansDir = cwdPath(".plans");
+    if (!existsSync(plansDir)) {
+        console.log("No .plans/ directory found.");
+        return;
+    }
+    const plans = readdirSync(plansDir)
+        .filter((file) => PLAN_RE.test(file))
+        .sort()
+        .reverse();
+    for (const plan of plans) {
+        const parsed = parsePlanFilename(plan);
+        console.log(`${parsed.date}  ${parsed.localName}  .plans/${parsed.sourceFilename}`);
+    }
+}
+function readConfig() {
+    return {
+        ...readJsonIfExists(userConfigPath()),
+        ...readJsonIfExists(cwdPath(".postplan.json")),
+    };
+}
+function isConfigKey(key) {
+    return CONFIG_KEYS.includes(key);
+}
+function setConfig([key, ...valueParts]) {
+    const value = valueParts.join(" ").trim();
+    if (!key || !value)
+        throw new Error("Usage: postplan config set <project|endpoint|token> <value>");
+    if (!isConfigKey(key)) {
+        throw new Error("Config key must be project, endpoint, or token");
+    }
+    if (key === "token") {
+        const config = readJsonIfExists(userConfigPath());
+        config.token = value;
+        writeJson(userConfigPath(), config);
+        console.log(`saved token to ${userConfigPath()}`);
+        return;
+    }
+    const configPath = cwdPath(".postplan.json");
+    const config = readJsonIfExists(configPath);
+    config[key] = value;
+    writeJson(configPath, config);
+    console.log(`saved ${key} to ${configPath}`);
+}
+function getOption(args, name) {
+    const index = args.indexOf(name);
+    if (index === -1)
+        return undefined;
+    const value = args[index + 1];
+    if (!value || value.startsWith("--"))
+        throw new Error(`${name} requires a value`);
+    args.splice(index, 2);
+    return value;
+}
+async function readResponseJson(response) {
+    try {
+        return await response.json();
+    }
+    catch {
+        return {};
+    }
+}
+function getErrorMessage(body, fallback) {
+    if (isRecord(body) && typeof body.error === "string") {
+        return body.error;
+    }
+    return fallback;
+}
+function getPublishedUrl(body) {
+    if (isRecord(body) && typeof body.url === "string") {
+        return body.url;
+    }
+    throw new Error("Publish response did not include a url");
+}
+async function publish(args) {
+    const projectFlag = getOption(args, "--project");
+    const endpointFlag = getOption(args, "--endpoint");
+    const tokenFlag = getOption(args, "--token");
+    const [fileArg] = args;
+    if (!fileArg)
+        throw new Error("Usage: postplan publish <file> [--project slug] [--endpoint url]");
+    const filePath = resolve(fileArg);
+    if (!existsSync(filePath))
+        throw new Error(`File not found: ${filePath}`);
+    const parsed = parsePlanFilename(filePath);
+    let html = readFileSync(filePath, "utf8");
+    const config = readConfig();
+    const projectSlug = projectFlag ?? config.project;
+    const endpoint = endpointFlag ?? config.endpoint;
+    const token = tokenFlag ?? process.env.POSTPLAN_TOKEN ?? config.token;
+    if (!projectSlug)
+        throw new Error("No project slug configured. Run postplan config set project <slug>.");
+    if (!endpoint)
+        throw new Error("No endpoint configured. Run postplan config set endpoint <url>.");
+    const publishEndpoint = endpoint;
+    const publishProjectSlug = projectSlug;
+    async function sendPublish(currentHtml) {
+        const contentHash = `sha256:${createHash("sha256").update(currentHtml).digest("hex")}`;
+        const response = await fetch(`${publishEndpoint.replace(/\/$/, "")}/api/publish`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                ...(token ? { authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+                projectSlug: publishProjectSlug,
+                ...parsed,
+                title: parsed.localName.replaceAll("_", " "),
+                html: currentHtml,
+                contentHash,
+            }),
+        });
+        const body = await readResponseJson(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(body, `Publish failed with HTTP ${response.status}`));
+        }
+        return getPublishedUrl(body);
+    }
+    let hostedUrl = await sendPublish(html);
+    const linkedHtml = injectHostedLink(html, {
+        hostedUrl,
+        localPath: `.plans/${parsed.sourceFilename}`,
+    });
+    if (linkedHtml !== html) {
+        writeFileSync(filePath, linkedHtml);
+        html = linkedHtml;
+        hostedUrl = await sendPublish(html);
+    }
+    console.log(hostedUrl);
+}
 function help() {
-  console.log(`postplan ${VERSION}
+    console.log(`postplan ${VERSION}
 
 Usage:
   postplan init
@@ -435,26 +453,44 @@ Usage:
   postplan publish <file> [--project slug] [--endpoint url]
 `);
 }
-
 async function main() {
-  const [command, ...args] = process.argv.slice(2);
-
-  try {
-    if (!command || command === "--help" || command === "-h") return help();
-    if (command === "--version" || command === "-v") return console.log(VERSION);
-    if (command === "init") return init();
-    if (command === "new") return createPlan(args);
-    if (command === "list") return listPlans();
-    if (command === "config" && args[0] === "set") return setConfig(args.slice(1));
-    if (command === "publish") return await publish(args);
-    throw new Error(`Unknown command: ${command}`);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-  }
+    const [command, ...args] = process.argv.slice(2);
+    try {
+        if (!command || command === "--help" || command === "-h") {
+            help();
+            return;
+        }
+        if (command === "--version" || command === "-v") {
+            console.log(VERSION);
+            return;
+        }
+        if (command === "init") {
+            init();
+            return;
+        }
+        if (command === "new") {
+            createPlan(args);
+            return;
+        }
+        if (command === "list") {
+            listPlans();
+            return;
+        }
+        if (command === "config" && args[0] === "set") {
+            setConfig(args.slice(1));
+            return;
+        }
+        if (command === "publish") {
+            await publish(args);
+            return;
+        }
+        throw new Error(`Unknown command: ${command}`);
+    }
+    catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        process.exitCode = 1;
+    }
 }
-
 main();
-
 // Keep the file URL binding live for Windows npm link shims.
 fileURLToPath(import.meta.url);

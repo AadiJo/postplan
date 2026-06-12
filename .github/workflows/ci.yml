@@ -34,6 +34,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Mask Convex deployment URLs
+        shell: bash
+        run: |
+          if [ -n "${NEXT_PUBLIC_CONVEX_URL:-}" ]; then
+            echo "::add-mask::$NEXT_PUBLIC_CONVEX_URL"
+            echo "::add-mask::${NEXT_PUBLIC_CONVEX_URL/.convex.cloud/.convex.site}"
+            echo "::add-mask::${NEXT_PUBLIC_CONVEX_URL/.convex.site/.convex.cloud}"
+          fi
+
       - name: Build
         run: npm run build
 
@@ -74,8 +83,22 @@ jobs:
           done
           exit "$missing"
 
+      - name: Mask Convex deployment URLs
+        shell: bash
+        run: |
+          if [ -n "${NEXT_PUBLIC_CONVEX_URL:-}" ]; then
+            echo "::add-mask::$NEXT_PUBLIC_CONVEX_URL"
+            echo "::add-mask::${NEXT_PUBLIC_CONVEX_URL/.convex.cloud/.convex.site}"
+            echo "::add-mask::${NEXT_PUBLIC_CONVEX_URL/.convex.site/.convex.cloud}"
+          fi
+
       - name: Deploy Convex
-        run: npx convex deploy
+        shell: bash
+        run: |
+          set -o pipefail
+          npx convex deploy 2>&1 | sed -E \
+            -e 's#https://[A-Za-z0-9.-]+\.convex\.cloud#[redacted convex url]#g' \
+            -e 's#https://[A-Za-z0-9.-]+\.convex\.site#[redacted convex url]#g'
 
       - name: Pull Vercel environment
         run: npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
