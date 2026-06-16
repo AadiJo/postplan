@@ -1,0 +1,46 @@
+---
+import AuthCard from "../components/AuthCard.astro";
+import Layout from "../layouts/Layout.astro";
+import { getUserPrimaryEmail, isAllowedEmail } from "../lib/auth";
+import { getPlanByPublicId } from "../lib/plans";
+
+export const prerender = false;
+
+const auth = Astro.locals.auth();
+
+if (auth.isAuthenticated) {
+  const user = await Astro.locals.currentUser();
+  const userEmail = getUserPrimaryEmail(user);
+
+  if (!isAllowedEmail(userEmail)) {
+    return new Response("Forbidden.", { status: 403 });
+  }
+
+  if (!Astro.params.id) {
+    return new Response("Plan not found.", { status: 404 });
+  }
+
+  try {
+    const plan = await getPlanByPublicId(Astro.params.id);
+
+    if (!plan) {
+      return new Response("Plan not found.", { status: 404 });
+    }
+
+    return new Response(plan.html, {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    });
+  } catch (error) {
+    return new Response(error instanceof Error ? error.message : "Plan failed to load.", {
+      status: 500,
+    });
+  }
+}
+---
+
+<Layout>
+  <AuthCard />
+</Layout>

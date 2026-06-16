@@ -1,4 +1,4 @@
 {
   "project": "postplan",
-  "endpoint": "http://localhost:3000"
+  "endpoint": "https://postplan.johari-dev.com"
 }

@@ -75,9 +75,10 @@ When a plan is created or when the user asks to host, publish, or share a plan:
 1. Confirm the plan is in `.plans/`.
 2. Confirm the local filename follows `yyyy-mm-dd_snake_case_name.html`.
 3. Ensure `.postplan.json` has a project slug, or pass `--project`.
-4. Run `postplan publish <file>`.
-5. Ensure the local HTML's `Plan links` section includes the returned hosted URL.
-6. Give the user both the local file link and the hosted URL.
+4. Use `https://postplan.johari-dev.com` as the hosted Postplan endpoint unless the user explicitly requests another deployment.
+5. Run `postplan publish <file>`.
+6. Ensure the local HTML's `Plan links` section includes the returned hosted URL.
+7. Give the user both the local file link and the hosted URL.
 
 ## Formatting guidance
 

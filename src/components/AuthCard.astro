@@ -1,0 +1,16 @@
+---
+import { SignIn } from "@clerk/astro/components";
+
+const clerkAppearance = {
+  elements: {
+    headerSubtitle: "hidden",
+    footer: "hidden",
+    footerAction: "hidden",
+    footerItem: "hidden",
+  },
+};
+---
+
+<main class="page auth-page">
+  <SignIn routing="hash" appearance={clerkAppearance} />
+</main>

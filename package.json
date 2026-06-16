@@ -6,10 +6,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "vercel-build": "astro build",
+    "start": "astro preview",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
     "postplan": "npm run build --workspace postplan --silent && node packages/postplan-cli/bin/postplan.js",
@@ -17,12 +17,15 @@
     "hooks:install": "git config core.hooksPath .githooks"
   },
   "dependencies": {
+    "@astrojs/vercel": "^10.0.8",
+    "@clerk/astro": "^3.4.3",
+    "astro": "^6.4.7",
     "convex": "^1.41.0",
-    "next": "^16.0.10",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.9",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

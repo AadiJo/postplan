@@ -1,5 +1,7 @@
+import type { APIRoute } from "astro";
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
+import { getConvexUrl } from "../../lib/plans";
 
 type PublishPayload = {
   projectSlug?: string;
@@ -24,10 +26,10 @@ function requireString(value: unknown, name: string) {
   return value.trim();
 }
 
-export async function POST(request: Request) {
-  const expectedToken = process.env.POSTPLAN_PUBLISH_TOKEN;
+export const POST: APIRoute = async ({ request, url }) => {
+  const expectedToken = import.meta.env.POSTPLAN_PUBLISH_TOKEN;
 
-  if (!expectedToken && process.env.NODE_ENV === "production") {
+  if (!expectedToken && import.meta.env.PROD) {
     return Response.json({ error: "POSTPLAN_PUBLISH_TOKEN is not configured" }, { status: 500 });
   }
 
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid publish token" }, { status: 401 });
   }
 
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const convexUrl = getConvexUrl();
 
   if (!convexUrl) {
     return Response.json({ error: "NEXT_PUBLIC_CONVEX_URL is not configured" }, { status: 500 });
@@ -67,10 +69,9 @@ export async function POST(request: Request) {
       contentHash,
     });
 
-    const origin = new URL(request.url).origin;
     return Response.json({
       ...result,
-      url: `${origin}/${result.publicId}`,
+      url: `${url.origin}/${result.publicId}`,
     });
   } catch (error) {
     return Response.json(
@@ -78,4 +79,4 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-}
+};

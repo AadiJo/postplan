@@ -35,10 +35,36 @@ input {
   font: inherit;
 }
 
+button {
+  color: inherit;
+}
+
 .page {
   width: min(900px, calc(100% - 44px));
   margin: 0 auto;
   padding: 88px 0 96px;
+}
+
+.auth-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px 0;
+}
+
+.auth-page .cl-footer.hidden,
+.auth-page .cl-footerAction.hidden,
+.auth-page .cl-footerItem.hidden,
+.auth-page .cl-headerSubtitle.hidden {
+  display: none !important;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
 }
 
 .brand {
@@ -46,7 +72,33 @@ input {
   color: var(--accent);
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+}
+
+.topbar .brand {
+  margin: 0;
+}
+
+.icon-button {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+  border-color: var(--accent);
+  outline: 0;
+}
+
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
 h1 {
@@ -54,7 +106,6 @@ h1 {
   margin: 0;
   font-size: clamp(48px, 8vw, 86px);
   font-weight: 760;
-  letter-spacing: -0.075em;
   line-height: 0.94;
 }
 
@@ -63,7 +114,6 @@ h1 {
   margin: 28px 0 0;
   color: var(--muted);
   font-size: 18px;
-  letter-spacing: -0.01em;
 }
 
 .meta {
@@ -124,7 +174,6 @@ summary::-webkit-details-marker {
   color: var(--text);
   font-size: 20px;
   font-weight: 720;
-  letter-spacing: -0.035em;
 }
 
 .project-count {
@@ -171,6 +220,10 @@ summary::-webkit-details-marker {
   padding-top: 34px;
   border-top: 1px solid var(--line);
   color: var(--muted);
+}
+
+.is-hidden {
+  display: none;
 }
 
 code {
