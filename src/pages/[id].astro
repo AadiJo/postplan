@@ -1,46 +1,46 @@
 ---
-import AuthCard from "../components/AuthCard.astro";
-import Layout from "../layouts/Layout.astro";
-import { getUserPrimaryEmail, isAllowedEmail } from "../lib/auth";
+import { addPlainTextAlternate, htmlToPlainText, prefersPlainText } from "../lib/htmlText";
 import { getPlanByPublicId } from "../lib/plans";
 
 export const prerender = false;
 
-const auth = Astro.locals.auth();
+if (!Astro.params.id) {
+  return new Response("Plan not found.", { status: 404 });
+}
 
-if (auth.isAuthenticated) {
-  const user = await Astro.locals.currentUser();
-  const userEmail = getUserPrimaryEmail(user);
+try {
+  const plan = await getPlanByPublicId(Astro.params.id);
+  const textUrl = new URL(Astro.url);
+  textUrl.searchParams.set("format", "txt");
 
-  if (!isAllowedEmail(userEmail)) {
-    return new Response("Forbidden.", { status: 403 });
-  }
-
-  if (!Astro.params.id) {
+  if (!plan) {
     return new Response("Plan not found.", { status: 404 });
   }
 
-  try {
-    const plan = await getPlanByPublicId(Astro.params.id);
-
-    if (!plan) {
-      return new Response("Plan not found.", { status: 404 });
-    }
-
-    return new Response(plan.html, {
+  if (
+    Astro.url.searchParams.get("format") === "txt" ||
+    prefersPlainText(Astro.request.headers.get("accept"))
+  ) {
+    return new Response(`${htmlToPlainText(plan.html)}\n`, {
       headers: {
-        "content-type": "text/html; charset=utf-8",
+        "content-type": "text/plain; charset=utf-8",
         "cache-control": "no-store",
+        vary: "accept",
       },
     });
-  } catch (error) {
-    return new Response(error instanceof Error ? error.message : "Plan failed to load.", {
-      status: 500,
-    });
   }
+
+  return new Response(addPlainTextAlternate(plan.html, textUrl.href), {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      link: `<${textUrl.href}>; rel="alternate"; type="text/plain"`,
+      vary: "accept",
+    },
+  });
+} catch (error) {
+  return new Response(error instanceof Error ? error.message : "Plan failed to load.", {
+    status: 500,
+  });
 }
 ---
-
-<Layout>
-  <AuthCard />
-</Layout>

@@ -104,13 +104,19 @@ function parsePlanFilename(path: string): ParsedPlanFilename {
   };
 }
 
-function planTemplate({ title, localName, date, localPath }: PlanTemplateInput): string {
+function planTemplate({ title, date, localPath }: PlanTemplateInput): string {
+  const summary =
+    "Replace this with the short reason this plan exists and the decision it should help make.";
+
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(localName)}</title>
+  <meta name="description" content="${escapeHtml(summary)}">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(summary)}">
+  <title>${escapeHtml(title)} | postplan</title>
   <style>
     :root {
       color-scheme: dark;
@@ -238,7 +244,7 @@ function planTemplate({ title, localName, date, localPath }: PlanTemplateInput):
     <header>
       <p class="brand">// postplan</p>
       <h1>${escapeHtml(title)}</h1>
-      <p class="intro">Replace this with the short reason this plan exists and the decision it should help make.</p>
+      <p class="intro">${escapeHtml(summary)}</p>
       <p class="meta">${escapeHtml(date)} / draft / local .plans html</p>
     </header>
 
